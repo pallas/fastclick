@@ -122,14 +122,18 @@ IPFragmenter::fragment(Packet *p_in)
     ip->ip_sum = 0;
     ip->ip_sum = click_in_cksum((const unsigned char *)ip, hlen);
     Packet *first_fragment = p->clone();
-    first_fragment->take(p->length() - p->network_header_offset() - hlen - first_dlen);
+    if (first_fragment) {
+        first_fragment->take(p->length() - p->network_header_offset() - hlen - first_dlen);
 #if HAVE_BATCH
-    if (receives_batch)
-        output_push_batch(0, PacketBatch::make_from_packet(first_fragment));
-    else
+        if (receives_batch)
+            output_push_batch(0, PacketBatch::make_from_packet(first_fragment));
+        else
 #endif
-        output(0).push(first_fragment);
-    _fragments++;
+            output(0).push(first_fragment);
+        _fragments++;
+    } else {
+        _drops++;
+    }
 
     // output the remaining fragments
     int out_hlen = sizeof(click_ip) + optcopy(ip, 0);
