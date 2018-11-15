@@ -141,7 +141,7 @@ RatedSource::cleanup(CleanupStage)
 bool
 RatedSource::run_task(Task *)
 {
-    if (!_active)
+    if (!_active || !_packet)
         return false;
     if (_limit != NO_LIMIT && _count >= _limit) {
         if (_stop)
@@ -166,6 +166,8 @@ RatedSource::run_task(Task *)
     for (int i=0 ; i<n; i++) {
         if (_tb.remove_if(1)) {
             Packet *p = _packet->clone();
+            if (!p)
+                break;
             p->set_timestamp_anno(Timestamp::now());
 
             if (head == NULL) {
@@ -199,9 +201,11 @@ RatedSource::run_task(Task *)
 #else
     if (_tb.remove_if(1)) {
         Packet *p = _packet->clone();
-        p->set_timestamp_anno(Timestamp::now());
-        output(0).push(p);
-        _count++;
+        if (p) {
+            p->set_timestamp_anno(Timestamp::now());
+            output(0).push(p);
+            _count++;
+        }
         _task.fast_reschedule();
         return true;
     } else {
@@ -217,7 +221,7 @@ RatedSource::run_task(Task *)
 Packet *
 RatedSource::pull(int)
 {
-    if (!_active)
+    if (!_active || !_packet)
     return 0;
     if (_limit != NO_LIMIT && _count >= _limit) {
     if (_stop)
@@ -230,7 +234,8 @@ RatedSource::pull(int)
     if (_tb.remove_if(1)) {
         _count++;
         Packet *p = _packet->clone();
-        p->set_timestamp_anno(Timestamp::now());
+        if (p)
+            p->set_timestamp_anno(Timestamp::now());
         return p;
     }
 
