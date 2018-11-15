@@ -72,13 +72,15 @@ TimedSource::cleanup(CleanupStage)
 void
 TimedSource::run_timer(Timer *)
 {
-    if (!_active)
+    if (!_active || !_packet)
 	return;
     if (_limit < 0 || _count < _limit) {
 	Packet *p = _packet->clone();
-	p->timestamp_anno().assign_now();
-	output(0).push(p);
-	_count++;
+	if (p) {
+            p->timestamp_anno().assign_now();
+            output(0).push(p);
+            _count++;
+	}
 	_timer.reschedule_after(_interval);
     } else if (_stop)
 	router()->please_stop_driver();
